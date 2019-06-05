@@ -304,34 +304,34 @@ class LoginController extends Controller
             if ($this->config->getAppValue($this->appName, 'disable_registration')) {
                 throw new LoginException($this->l->t('Auto creating new users is disabled'));
             }
-            if (
-                $this->config->getAppValue($this->appName, 'prevent_create_email_exists')
-                && count($this->userManager->getByEmail($profile->email)) !== 0
-            ) {
-                throw new LoginException($this->l->t('Email already registered'));
-            }
-            $password = substr(base64_encode(random_bytes(64)), 0, 30);
-            $user = $this->userManager->createUser($uid, $password);
-            $user->setDisplayName((string)$profile->displayName);
-            $user->setEMailAddress((string)$profile->email);
+            $user = $this->userManager->getByEmail($profile->email);
+            if (count($user) !== 0) {
+                $user = $user[0];
+                $this->socialConnect->connectLogin($user->getUID(), $uid);
+            } else {
+                $password = substr(base64_encode(random_bytes(64)), 0, 30);
+                $user = $this->userManager->createUser($uid, $password);
+                $user->setDisplayName((string)$profile->displayName);
+                $user->setEMailAddress((string)$profile->email);
 
-            $newUserGroup = $this->config->getAppValue($this->appName, 'new_user_group');
-            if ($newUserGroup) {
-                try {
-                    $group = $this->groupManager->get($newUserGroup);
-                    $group->addUser($user);
-                } catch (\Exception $e) {}
-            }
+                $newUserGroup = $this->config->getAppValue($this->appName, 'new_user_group');
+                if ($newUserGroup) {
+                    try {
+                        $group = $this->groupManager->get($newUserGroup);
+                        $group->addUser($user);
+                    } catch (\Exception $e) {}
+                }
 
-            if ($profile->photoURL) {
-                $curl = new Curl();
-                $photo = $curl->request($profile->photoURL);
-                try {
-                    $avatar = $this->avatarManager->getAvatar($uid);
-                    $avatar->set($photo);
-                } catch (\Exception $e) {}
+                if ($profile->photoURL) {
+                    $curl = new Curl();
+                    $photo = $curl->request($profile->photoURL);
+                    try {
+                        $avatar = $this->avatarManager->getAvatar($uid);
+                        $avatar->set($photo);
+                    } catch (\Exception $e) {}
+                }
+                $this->config->setUserValue($uid, $this->appName, 'disable_password_confirmation', 1);
             }
-            $this->config->setUserValue($uid, $this->appName, 'disable_password_confirmation', 1);
         }
 
         $this->completeLogin($user, ['loginName' => $user->getUID(), 'password' => null]);
