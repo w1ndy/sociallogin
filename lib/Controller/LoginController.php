@@ -277,13 +277,13 @@ class LoginController extends Controller
 
 	private function login($uid, Profile $profile, $idScope = null)
     {
-    	if ($idScope !== null && isset($profile->data[$idScope])) {
-			$user = $this->determineBackendFor($profile->data[$idScope]);
-			if ($user === null) {
-				throw new \Exception("No user known for id scope {$profile->data[$idScope]}");
-			}
-			$uid = $user[0];
-		}
+#    	if ($idScope !== null && isset($profile->data[$idScope])) {
+#			$user = $this->determineBackendFor($profile->data[$idScope]);
+#			if ($user === null) {
+#				throw new \Exception("No user known for id scope {$profile->data[$idScope]}");
+#			}
+#			$uid = $user[0];
+#		}
 		$user = $this->userManager->get($uid);
         if (null === $user) {
             $connectedUid = $this->socialConnect->findUID($uid);
